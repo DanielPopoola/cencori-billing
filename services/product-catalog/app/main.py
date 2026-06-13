@@ -8,6 +8,7 @@ from app.core.cache import close_redis, init_redis
 from app.core.database import engine
 from app.core.logging import get_logger, setup_logging
 from app.core.response import APIError, error
+from app.routers import plans
 
 setup_logging()
 logger = get_logger(__name__)
@@ -34,7 +35,12 @@ app = FastAPI(
 
 @app.exception_handler(APIError)
 async def api_error_handler(request: Request, exc: APIError) -> JSONResponse:
-    return error(exc.message, status_code=exc.status_code, code=exc.code, details=exc.details)
+    return error(
+        exc.message,
+        status_code=exc.status_code,
+        code=exc.code,
+        details=exc.details,
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -47,6 +53,9 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     )
 
 
+app.include_router(plans.router, prefix="/api/v1")
+
+
 @app.get("/healthz", tags=["ops"])
-async def healthz():
+async def healthz() -> dict:
     return {"status": "ok"}

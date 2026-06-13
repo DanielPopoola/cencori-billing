@@ -34,6 +34,10 @@ class PlanService:
         self._redis = redis
         self._settings = settings
 
+    @property
+    def settings(self) -> Settings:
+        return self._settings
+
     async def get_plan_version(self, plan_id: uuid.UUID, version: int) -> PlanVersionResponse:
         cached = await cache.get_cached_plan(self._redis, plan_id, version)
         if cached:

@@ -49,3 +49,12 @@ class DuplicatePlanNameError(APIError):
             status_code=status.HTTP_409_CONFLICT,
             code="duplicate_plan_name",
         )
+
+
+class UnauthorizedError(APIError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Missing or invalid admin token",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="unauthorized",
+        )
