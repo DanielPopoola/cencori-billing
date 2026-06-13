@@ -9,19 +9,24 @@ from app.core.database import engine
 from app.core.logging import get_logger, setup_logging
 from app.core.response import APIError, error
 from app.routers import plans
+from app.workers.outbox_worker import OutboxWorker
 
 setup_logging()
 logger = get_logger(__name__)
+
+worker = OutboxWorker()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("startup_begin")
     await init_redis()
+    await worker.start()
     logger.info("startup_complete")
     yield
     logger.info("shutdown_begin")
     await close_redis()
+    await worker.stop()
     await engine.dispose()
     logger.info("shutdown_complete")
 
