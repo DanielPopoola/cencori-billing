@@ -36,6 +36,11 @@ async def get_latest_active_plan(session: AsyncSession, plan_id: uuid.UUID) -> P
     return plan
 
 
+async def list_all_plans(session: AsyncSession) -> list[Plan]:
+    result = await session.execute(select(Plan))
+    return list(result.scalars().all())
+
+
 async def list_active_plans(session: AsyncSession) -> list[Plan]:
     result = await session.execute(
         select(Plan).where(Plan.is_active == True)  # noqa: E712

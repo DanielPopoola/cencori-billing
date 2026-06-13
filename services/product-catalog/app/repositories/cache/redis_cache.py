@@ -70,8 +70,8 @@ async def cache_latest_pointer(redis: aioredis.Redis, plan_id: uuid.UUID, versio
 async def update_cache_after_write(
     redis: aioredis.Redis, plan: Plan, response: PlanVersionResponse
 ) -> None:
-    await cache_plan(plan.id, plan.version, response)
-    await cache_latest_pointer(plan.id, plan.version)
+    await cache_plan(redis, plan.id, plan.version, response)
+    await cache_latest_pointer(redis, plan.id, plan.version)
     try:
         await redis.sadd(_ACTIVE_PLANS_KEY, str(plan.id))
     except Exception:

@@ -286,7 +286,7 @@ class PlanService:
         )
 
     async def _assert_plan_name_is_unique(self, name: str) -> None:
-        plans = await repo.list_active_plans(self._session)
+        plans = await repo.list_all_plans(self._session)
         existing_names = {p.name.lower() for p in plans}
         if name.lower() in existing_names:
             raise DuplicatePlanNameError(name)
