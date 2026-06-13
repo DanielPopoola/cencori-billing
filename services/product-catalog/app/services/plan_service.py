@@ -124,11 +124,13 @@ class PlanService:
         )
         outbox_event = self._build_created_event(plan, previous_version=None)
 
-        async with self._session.begin():
-            await repo.insert_plan(self._session, plan)
-            await repo.insert_pricing_rows(self._session, pricing_rows)
-            await repo.insert_entitlement_rows(self._session, entitlement_rows)
-            self._session.add(outbox_event)
+        await repo.insert_plan(self._session, plan)
+        await repo.insert_pricing_rows(self._session, pricing_rows)
+        await repo.insert_entitlement_rows(self._session, entitlement_rows)
+        self._session.add(outbox_event)
+
+        await self._session.flush()
+        await self._session.refresh(plan)
 
         response = self._to_plan_response(plan)
         await cache.update_cache_after_write(self._redis, plan, response)
@@ -155,13 +157,16 @@ class PlanService:
             reason=f"superseded_by_version_{new_version}",
         )
 
-        async with self._session.begin():
-            await repo.deactivate_plan_version(self._session, plan_id, previous_version)
-            await repo.insert_plan(self._session, plan)
-            await repo.insert_pricing_rows(self._session, pricing_rows)
-            await repo.insert_entitlement_rows(self._session, entitlement_rows)
-            self._session.add(created_event)
-            self._session.add(deactivated_event)
+        await repo.deactivate_plan_version(self._session, plan_id, previous_version)
+        await repo.insert_plan(self._session, plan)
+        await repo.insert_pricing_rows(self._session, pricing_rows)
+        await repo.insert_entitlement_rows(self._session, entitlement_rows)
+
+        self._session.add(created_event)
+        self._session.add(deactivated_event)
+
+        await self._session.flush()
+        await self._session.refresh(plan)
 
         response = self._to_plan_response(plan)
         await cache.update_cache_after_write(self._redis, plan, response)
@@ -187,9 +192,11 @@ class PlanService:
             reason="manual_deactivation",
         )
 
-        async with self._session.begin():
-            await repo.deactivate_plan_version(self._session, plan_id, version)
-            self._session.add(outbox_event)
+        await repo.deactivate_plan_version(self._session, plan_id, version)
+        self._session.add(outbox_event)
+
+        await self._session.flush()
+        await self._session.refresh(plan)
 
         await cache.invalidate_cache_after_deactivation(self._redis, plan_id, version)
 
