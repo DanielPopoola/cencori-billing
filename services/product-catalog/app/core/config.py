@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = Field(default=10, ge=0)
     DB_POOL_TIMEOUT: int = Field(default=30, ge=1)
 
+    BATCH_ROWS: int = Field(default=100, ge=1)
     OUTBOX_POLL_INTERVAL_SECONDS: int = Field(default=5, ge=1)
     OUTBOX_DEAD_LETTER_THRESHOLD: int = Field(default=10, ge=1)
 
