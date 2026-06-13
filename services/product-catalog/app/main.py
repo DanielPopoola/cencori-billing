@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.core.cache import close_redis, init_redis
 from app.core.database import engine
 from app.core.logging import get_logger, setup_logging
+from app.core.response import APIError, error
 
 setup_logging()
 logger = get_logger(__name__)
@@ -27,6 +30,21 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(APIError)
+async def api_error_handler(request: Request, exc: APIError) -> JSONResponse:
+    return error(exc.message, status_code=exc.status_code, code=exc.code, details=exc.details)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    return error(
+        "Invalid request body",
+        status_code=422,
+        code="validation_error",
+        details=exc.errors(),
+    )
 
 
 @app.get("/healthz", tags=["ops"])
