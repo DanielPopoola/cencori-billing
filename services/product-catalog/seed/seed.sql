@@ -1,4 +1,3 @@
--- ── Free Plan
 INSERT INTO plans (id, name, version, is_active, is_custom_pricing)
 VALUES ('00000000-0000-0000-0000-000000000001', 'free', 1, true, false)
 ON CONFLICT DO NOTHING;
@@ -17,7 +16,7 @@ INSERT INTO plan_entitlements (plan_id, plan_version, feature_key, value) VALUES
 ('00000000-0000-0000-0000-000000000001', 1, 'observability',       '{"type": "boolean", "enabled": false}')
 ON CONFLICT DO NOTHING;
 
--- ── Pro ──────────────────────────────────────────────────────────────────────
+
 INSERT INTO plans (id, name, version, is_active, is_custom_pricing)
 VALUES ('00000000-0000-0000-0000-000000000002', 'pro', 1, true, false)
 ON CONFLICT DO NOTHING;
@@ -36,7 +35,7 @@ INSERT INTO plan_entitlements (plan_id, plan_version, feature_key, value) VALUES
 ('00000000-0000-0000-0000-000000000002', 1, 'observability',       '{"type": "boolean", "enabled": true}')
 ON CONFLICT DO NOTHING;
 
--- ── Team ─────────────────────────────────────────────────────────────────────
+
 INSERT INTO plans (id, name, version, is_active, is_custom_pricing)
 VALUES ('00000000-0000-0000-0000-000000000003', 'team', 1, true, false)
 ON CONFLICT DO NOTHING;
@@ -57,8 +56,7 @@ INSERT INTO plan_entitlements (plan_id, plan_version, feature_key, value) VALUES
 ('00000000-0000-0000-0000-000000000003', 1, 'end_user_billing',    '{"type": "boolean", "enabled": true}')
 ON CONFLICT DO NOTHING;
 
--- ── Enterprise ───────────────────────────────────────────────────────────────
--- No plan_pricing row — is_custom_pricing = true means pricing is out of band.
+
 INSERT INTO plans (id, name, version, is_active, is_custom_pricing)
 VALUES ('00000000-0000-0000-0000-000000000004', 'enterprise', 1, true, true)
 ON CONFLICT DO NOTHING;
