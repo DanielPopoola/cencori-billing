@@ -65,7 +65,7 @@ async def deactivate_plan_version(
     return success(data=result)
 
 
-@router.get("")
+@router.get("", response_model=list[PlanVersionResponse])
 async def list_plans(
     service: PlanService = Depends(get_plan_service),
 ) -> JSONResponse:
@@ -73,7 +73,7 @@ async def list_plans(
     return success(data=plans)
 
 
-@router.get("/{plan_id}/versions/latest", response_model=list[PlanVersionResponse])
+@router.get("/{plan_id}/versions/latest", response_model=PlanVersionResponse)
 async def get_latest_plan(
     plan_id: uuid.UUID,
     service: PlanService = Depends(get_plan_service),
