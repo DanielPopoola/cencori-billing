@@ -10,6 +10,12 @@ from app.core.response import success
 from app.schemas.plans import (
     CreatePlanRequest,
     CreatePlanVersionRequest,
+    CustomPricingResponse,
+    DeactivatedPlanResponse,
+    EntitlementResponse,
+    EntitlementsResponse,
+    PlanVersionResponse,
+    PricingResponse,
 )
 from app.services.dependencies import get_plan_service
 from app.services.plan_service import PlanService
@@ -25,7 +31,7 @@ def require_admin_token(
         raise UnauthorizedError()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=PlanVersionResponse)
 async def create_plan(
     body: CreatePlanRequest,
     service: PlanService = Depends(get_plan_service),
@@ -35,7 +41,9 @@ async def create_plan(
     return success(data=plan, status_code=status.HTTP_201_CREATED)
 
 
-@router.post("/{plan_id}/versions", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{plan_id}/versions", status_code=status.HTTP_201_CREATED, response_model=PlanVersionResponse
+)
 async def create_plan_version(
     plan_id: uuid.UUID,
     body: CreatePlanVersionRequest,
@@ -46,7 +54,7 @@ async def create_plan_version(
     return success(data=plan, status_code=status.HTTP_201_CREATED)
 
 
-@router.patch("/{plan_id}/versions/{version}/deactivate")
+@router.patch("/{plan_id}/versions/{version}/deactivate", response_model=DeactivatedPlanResponse)
 async def deactivate_plan_version(
     plan_id: uuid.UUID,
     version: int,
@@ -65,7 +73,7 @@ async def list_plans(
     return success(data=plans)
 
 
-@router.get("/{plan_id}/versions/latest")
+@router.get("/{plan_id}/versions/latest", response_model=list[PlanVersionResponse])
 async def get_latest_plan(
     plan_id: uuid.UUID,
     service: PlanService = Depends(get_plan_service),
@@ -74,7 +82,7 @@ async def get_latest_plan(
     return success(data=plan)
 
 
-@router.get("/{plan_id}/versions/{version}")
+@router.get("/{plan_id}/versions/{version}", response_model=PlanVersionResponse)
 async def get_plan_version(
     plan_id: uuid.UUID,
     version: int,
@@ -84,7 +92,9 @@ async def get_plan_version(
     return success(data=plan)
 
 
-@router.get("/{plan_id}/versions/{version}/pricing")
+@router.get(
+    "/{plan_id}/versions/{version}/pricing", response_model=PricingResponse | CustomPricingResponse
+)
 async def get_plan_pricing(
     plan_id: uuid.UUID,
     version: int,
@@ -95,7 +105,7 @@ async def get_plan_pricing(
     return success(data=pricing)
 
 
-@router.get("/{plan_id}/versions/{version}/entitlements")
+@router.get("/{plan_id}/versions/{version}/entitlements", response_model=EntitlementsResponse)
 async def get_plan_entitlements(
     plan_id: uuid.UUID,
     version: int,
@@ -105,7 +115,9 @@ async def get_plan_entitlements(
     return success(data=entitlements)
 
 
-@router.get("/{plan_id}/versions/{version}/entitlements/{feature_key}")
+@router.get(
+    "/{plan_id}/versions/{version}/entitlements/{feature_key}", response_model=EntitlementResponse
+)
 async def get_plan_entitlement_by_key(
     plan_id: uuid.UUID,
     version: int,
