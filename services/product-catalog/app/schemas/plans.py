@@ -49,7 +49,7 @@ class CreatePlanVersionRequest(BaseModel):
 
 
 class PricingResponse(BaseModel):
-    plan_id: uuid.UUID
+    family_id: uuid.UUID
     plan_name: str
     plan_version: int
     currency: str
@@ -60,7 +60,7 @@ class PricingResponse(BaseModel):
 
 
 class CustomPricingResponse(BaseModel):
-    plan_id: uuid.UUID
+    family_id: uuid.UUID
     plan_name: str
     plan_version: int
     is_custom_pricing: bool = True
@@ -68,14 +68,14 @@ class CustomPricingResponse(BaseModel):
 
 
 class EntitlementResponse(BaseModel):
-    plan_id: uuid.UUID
+    family_id: uuid.UUID
     plan_version: int
     feature_key: str
     value: EntitlementValue
 
 
 class EntitlementsResponse(BaseModel):
-    plan_id: uuid.UUID
+    family_id: uuid.UUID
     plan_version: int
     entitlements: list[EntitlementEntry]
 

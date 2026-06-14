@@ -1,3 +1,4 @@
+import redis.asyncio as aioredis
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,5 +10,6 @@ from app.services.plan_service import PlanService
 
 def get_plan_service(
     session: AsyncSession = Depends(get_session),
+    redis: aioredis.Redis = Depends(get_redis),
 ) -> PlanService:
-    return PlanService(session=session, redis=get_redis(), settings=settings)
+    return PlanService(session=session, redis=redis, settings=settings)

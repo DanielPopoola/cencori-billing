@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -54,7 +55,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
         "Invalid request body",
         status_code=422,
         code="validation_error",
-        details=exc.errors(),
+        details=jsonable_encoder(exc.errors()),
     )
 
 
