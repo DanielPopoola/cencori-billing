@@ -18,19 +18,22 @@ Fixture scopes:
 from __future__ import annotations
 
 import os
+import asyncio
 from pathlib import Path
 from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from testcontainers.postgres import PostgresContainer
 from unittest.mock import AsyncMock, MagicMock
 
 
 from app.core.database import Base
+from app.seed.seed import seed
 
 # Paths
 REPO_ROOT = Path(__file__).parent.parent.parent.parent  # cencori-billing/
@@ -53,10 +56,14 @@ def postgres_url():
 @pytest_asyncio.fixture(scope="session")
 async def db_engine(postgres_url: str):
     """Create the async engine and run all migrations + seed once per session."""
-    engine = create_async_engine(postgres_url)
+    engine = create_async_engine(postgres_url, poolclass=NullPool)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session:
+        await seed(session)
 
     yield engine
     await engine.dispose()
@@ -77,6 +84,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
 # ── Redis mock ────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def mock_redis():
     """
@@ -95,6 +103,7 @@ def mock_redis():
 
 # ── App client ────────────────────────────────────────────────────────────────
 
+
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession, mock_redis) -> AsyncGenerator[AsyncClient, None]:
     """
@@ -106,6 +115,10 @@ async def client(db_session: AsyncSession, mock_redis) -> AsyncGenerator[AsyncCl
     os.environ["REDIS_URL"] = "redis://localhost:6379/0"
     os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
 
+    from app.core.config import settings
+
+    settings.ADMIN_TOKEN = ADMIN_TOKEN
+
     from app.core.cache import get_redis
     from app.core.database import get_session
     from app.main import app
@@ -113,12 +126,16 @@ async def client(db_session: AsyncSession, mock_redis) -> AsyncGenerator[AsyncCl
     app.dependency_overrides[get_session] = lambda: db_session
     app.dependency_overrides[get_redis] = lambda: mock_redis
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.new_event_loop()
+    yield loop
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

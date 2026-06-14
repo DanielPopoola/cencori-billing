@@ -20,24 +20,40 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 
 
-class Plan(Base):
-    __tablename__ = "plans"
+class PlanFamily(Base):
+    __tablename__ = "plan_families"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     is_custom_pricing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    pricing: Mapped[list["PlanPricing"]] = relationship(back_populates="plan", lazy="selectin")
-    entitlements: Mapped[list["PlanEntitlement"]] = relationship(back_populates="plan", lazy="selectin")
+    versions: Mapped[list["Plan"]] = relationship(back_populates="family", lazy="selectin")
+    pricing: Mapped[list["PlanPricing"]] = relationship(back_populates="family", lazy="selectin")
+    entitlements: Mapped[list["PlanEntitlement"]] = relationship(
+        back_populates="family", lazy="selectin"
+    )
+
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    family_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plan_families.id"), nullable=False
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    family: Mapped["PlanFamily"] = relationship(back_populates="versions", lazy="selectin")
 
     __table_args__ = (
-        UniqueConstraint("name", "version", name="uq_plans_name_version"),
-        Index("idx_plans_name_version", "name", "version"),
+        UniqueConstraint("family_id", "version", name="uq_plans_family_version"),
         Index("idx_plans_active", "is_active", postgresql_where=text("is_active = true")),
     )
 
@@ -46,8 +62,8 @@ class PlanPricing(Base):
     __tablename__ = "plan_pricing"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    plan_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("plans.id"), nullable=False
+    family_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plan_families.id"), nullable=False
     )
     plan_version: Mapped[int] = mapped_column(Integer, nullable=False)
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -56,13 +72,13 @@ class PlanPricing(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    plan: Mapped["Plan"] = relationship(back_populates="pricing")
+    family: Mapped["PlanFamily"] = relationship(back_populates="pricing", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint(
-            "plan_id", "plan_version", "currency", name="uq_plan_pricing_plan_version_currency"
+            "family_id", "plan_version", "currency", name="uq_plan_pricing_plan_version_currency"
         ),
-        Index("idx_plan_pricing_plan", "plan_id", "plan_version"),
+        Index("idx_plan_pricing_plan", "family_id", "plan_version"),
     )
 
 
@@ -70,8 +86,8 @@ class PlanEntitlement(Base):
     __tablename__ = "plan_entitlements"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    plan_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("plans.id"), nullable=False
+    family_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plan_families.id"), nullable=False
     )
     plan_version: Mapped[int] = mapped_column(Integer, nullable=False)
     feature_key: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -80,11 +96,13 @@ class PlanEntitlement(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    plan: Mapped["Plan"] = relationship(back_populates="entitlements")
+    family: Mapped["PlanFamily"] = relationship(back_populates="entitlements", lazy="selectin")
 
     __table_args__ = (
-        UniqueConstraint("plan_id", "plan_version", "feature_key", name="uq_plan_entitlements_feature"),
-        Index("idx_plan_entitlements_plan", "plan_id", "plan_version"),
+        UniqueConstraint(
+            "family_id", "plan_version", "feature_key", name="uq_plan_entitlements_feature"
+        ),
+        Index("idx_plan_entitlements_plan", "family_id", "plan_version"),
         Index("idx_plan_entitlements_value", "value", postgresql_using="gin"),
     )
 
