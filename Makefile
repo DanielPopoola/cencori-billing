@@ -13,15 +13,8 @@ logs:
 # ── Product Catalog ───────────────────────────────────────
 migrate-pc:
 	@echo "Running product_catalog migrations..."
-	@for f in migrations/product_catalog/*.sql; do \
-		echo "  $$f"; \
-		docker exec -i $$(docker compose ps -q postgres) \
-			psql -U cencori -d cencori < "$$f"; \
-	done
-
+	cd services/product-catalog && uv run alembic upgrade head
 seed-pc:
-	docker exec -i $$(docker compose ps -q postgres) \
-		psql -U cencori -d cencori < services/product-catalog/seed/seed.sql
-
+	cd services/product-catalog && uv run python -m app.seed.seed
 dev-pc:
 	cd services/product-catalog && uv run uvicorn app.main:app --reload --port 8001
